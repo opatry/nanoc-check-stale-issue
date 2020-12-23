@@ -2,6 +2,17 @@
 
 ignored_excerpt_pictures = []
 
+postprocess do
+  @items.each do |item|
+    puts "Item #{item.identifier}"
+    item.reps.each do |repr|
+      puts " --- Rep #{repr.name} -> #{item.path :rep => repr.name}"
+    end
+  end
+
+  puts "ignored_excerpt_pictures = #{ignored_excerpt_pictures}"
+end
+
 preprocess do
 
   sorted_articles.each do |item|
