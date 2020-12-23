@@ -1,0 +1,81 @@
+#!/usr/bin/env ruby
+
+all_excerpt_pictures = []
+
+preprocess do
+
+  sorted_articles.each do |item|
+    content = item.raw_content
+    item[:pictures] = content.scan(/picture\('(.+)'\)/).flatten.uniq
+
+    if content =~ /\s<!-- more -->\s/
+      excerpt = content.partition('<!-- more -->').first
+      all_excerpt_pictures += excerpt.scan(/picture\('(.+)'\)/).flatten.uniq
+    else
+      all_excerpt_pictures += item[:pictures]
+    end
+  end
+end
+
+[:excerpt, :default].each do |repr|
+  compile '/photos/*', :rep => repr do
+    unless repr == :excerpt && !all_excerpt_pictures.include?(@item.identifier.to_s)
+      width = @config[:picture_width][repr]
+      # filter :thumbnailize, :width => width unless @config[:dev]
+    end
+  end
+
+  compile '/posts/*', :rep => repr do
+    # erb must be done before markdown to allow image helper processing markdown instead of direct HTML
+    filter :erb
+    filter :kramdown if @item[:extension] == 'md'
+
+    layout "article_#{repr}"
+
+    layout 'article' unless @item[:kind].nil?
+
+    snapshot repr if repr == :excerpt
+
+    layout 'default' if repr == :default
+  end
+end
+
+compile '*' do
+  unless @item.binary?
+    filter :erb
+    filter :kramdown if @item[:extension] == 'md'
+    layout 'default'
+  end
+end
+
+route '/posts/*', :rep => :default do
+  slug = /[0-9]{4}\-[0-9]{2}\-[0-9]{2}\-([^\/]+)/.match(@item.identifier).captures.first
+
+  post_date = Date.parse(@item[:created_at].to_s)
+  month_2d = '%02d' % post_date.month
+  day_2d = '%02d' % post_date.mday
+  "/#{post_date.year}/#{month_2d}/#{day_2d}/#{slug}/index.html"
+end
+
+route '/posts/*', :rep => :excerpt do
+  # ignore this representation as output, only used to retrieve its content
+end
+
+[:excerpt, :default].each do |repr|
+  route '/photos/*', :rep => repr do
+    unless repr == :excerpt && !all_excerpt_pictures.include?(@item.identifier.to_s)
+      "#{@item.identifier.chop}-#{@item_rep.name}.#{@item[:extension]}"
+    end
+  end
+end
+
+route '*' do
+  if @item.binary?
+    @item.identifier.chop
+  else
+    # Write item with identifier /foo/ to /foo/index.html
+    @item.identifier + 'index.html'
+  end
+end
+
+layout '*', :erb

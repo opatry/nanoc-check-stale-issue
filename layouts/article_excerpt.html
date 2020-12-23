@@ -1,0 +1,9 @@
+<%
+  excerpt = yield
+  if excerpt =~ /\s<!-- more -->\s/
+    excerpt = excerpt.partition('<!-- more -->').first
+  end
+%>
+<div class="post-main-content post-excerpt">
+<%= excerpt %>
+</div>

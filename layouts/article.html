@@ -1,0 +1,54 @@
+<%
+is_excerpt = @item_rep.name == (@item.reps[:excerpt] ? @item.reps[:excerpt].name : "".to_sym)
+is_static_page = @item[:kind] == 'page'
+
+unless is_excerpt || is_static_page
+  # previous/next article inspired by https://ecarmi.org/writing/next-previous-links-nanoc/
+
+  current_index = sorted_articles.index(@item)
+
+  prev_index = current_index + 1
+  next_index = current_index - 1
+  prev_article = sorted_articles[prev_index] # might be nil
+  unless next_index < 0
+    next_article = sorted_articles[next_index]
+  end
+
+  # output navigation between articles if at least one is available
+  unless prev_article.nil? && next_article.nil?
+%>
+  <p id="navlinks" class="navinfos">
+  <%
+  unless prev_article.nil?
+    title = prev_article[:title]
+  %>
+    <%= link_to("&#171; #{title}", prev_article, :class => "prev", :title => title) %>
+  <%
+  end
+
+  # output a separator if both previous and next article available
+  unless prev_article.nil? || next_article.nil?
+  %>
+  <span>&mdash;</span>
+  <%
+  end
+
+  unless next_article.nil?
+    title = next_article[:title]
+  %>
+    <%= link_to("#{title} &#187;", next_article, :class => "next", :title => title) %>
+  <%
+  end
+  %>
+  </p>
+<%
+  end # prev_article || next_article
+end # is_excerpt
+
+puts "Warning: #{@item.identifier} doesn't have any tag" if @item[:kind] == 'post' && @item[:tags].nil?
+
+%>
+
+<article class="styledBox timelineArticle">
+  <%= yield %>
+</article>
