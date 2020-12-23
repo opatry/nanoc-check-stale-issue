@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-all_excerpt_pictures = []
+ignored_excerpt_pictures = []
 
 preprocess do
 
@@ -10,16 +10,14 @@ preprocess do
 
     if content =~ /\s<!-- more -->\s/
       excerpt = content.partition('<!-- more -->').first
-      all_excerpt_pictures += excerpt.scan(/picture\('(.+)'\)/).flatten.uniq
-    else
-      all_excerpt_pictures += item[:pictures]
+      ignored_excerpt_pictures += item[:pictures] - excerpt.scan(/picture\('(.+)'\)/).flatten.uniq
     end
   end
 end
 
 [:excerpt, :default].each do |repr|
   compile '/photos/*', :rep => repr do
-    unless repr == :excerpt && !all_excerpt_pictures.include?(@item.identifier.to_s)
+    unless repr == :excerpt && ignored_excerpt_pictures.include?(@item.identifier.to_s)
       width = @config[:picture_width][repr]
       # filter :thumbnailize, :width => width unless @config[:dev]
     end
@@ -63,7 +61,7 @@ end
 
 [:excerpt, :default].each do |repr|
   route '/photos/*', :rep => repr do
-    unless repr == :excerpt && !all_excerpt_pictures.include?(@item.identifier.to_s)
+    unless repr == :excerpt && ignored_excerpt_pictures.include?(@item.identifier.to_s)
       "#{@item.identifier.chop}-#{@item_rep.name}.#{@item[:extension]}"
     end
   end
