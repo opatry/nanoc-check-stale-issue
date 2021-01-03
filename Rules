@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-ignored_excerpt_pictures = []
 
 postprocess do
   @items.each do |item|
@@ -10,10 +9,11 @@ postprocess do
     end
   end
 
-  puts "ignored_excerpt_pictures = #{ignored_excerpt_pictures}"
+  puts "all_excerpt_pictures = #{@config[:all_excerpt_pictures]}"
 end
 
 preprocess do
+  @config[:all_excerpt_pictures] = []
 
   sorted_articles.each do |item|
     content = item.raw_content
@@ -21,14 +21,14 @@ preprocess do
 
     if content =~ /\s<!-- more -->\s/
       excerpt = content.partition('<!-- more -->').first
-      ignored_excerpt_pictures += (item[:pictures] - excerpt.scan(/picture\('(.+)'\)/).flatten.uniq).map { |i| @items[i] }
+      @config[:all_excerpt_pictures] += excerpt.scan(/picture\('(.+)'\)/).flatten.uniq.map { |i| @items[i] }
     end
   end
 end
 
 [:excerpt, :default].each do |repr|
   compile '/photos/**/*', :rep => repr do
-    unless repr == :excerpt && ignored_excerpt_pictures.include?(@item)
+    unless repr == :excerpt && !@config[:all_excerpt_pictures].include?(@item)
       width = @config[:picture_width][repr]
       # filter :thumbnailize, :width => width unless @config[:dev]
     end
@@ -72,7 +72,7 @@ end
 
 [:excerpt, :default].each do |repr|
   route '/photos/**/*', :rep => repr do
-    unless repr == :excerpt && ignored_excerpt_pictures.include?(@item)
+    unless repr == :excerpt && !@config[:all_excerpt_pictures].include?(@item)
       suffix = "-#{@item_rep.name}" unless repr == :default
       "#{@item.identifier.without_exts}#{suffix}.#{@item[:extension]}"
     end
