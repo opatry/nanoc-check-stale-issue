@@ -2,15 +2,15 @@
 # binary. If an item with an extension not in this list is found,  the file
 # will be considered as binary.
 text_extensions: [ 'adoc', 'asciidoc', 'atom', 'coffee', 'css', 'erb', 'haml', 'handlebars', 'hb', 'htm', 'html', 'js', 'less', 'markdown', 'md', 'ms', 'mustache', 'php', 'rb', 'rdoc', 'sass', 'scss', 'slim', 'tex', 'txt', 'xhtml', 'xml' ]
-
-string_pattern_type: legacy
+output_dir: output
+index_filenames: [ 'index.html' ]
+enable_output_diff: true
+prune:
+  auto_prune: true
+  exclude: [ '.git', '.hg', '.svn', 'CVS' ]
 data_sources:
-  -
-    type: filesystem_unified
-    identifier_type: legacy
-    items_root: /
-    layouts_root: /
-    allow_periods_in_identifiers: true
+  - type: filesystem
+    encoding: utf-8
 
 picture_width:
   excerpt: 400 # width of photos when in an excerpt

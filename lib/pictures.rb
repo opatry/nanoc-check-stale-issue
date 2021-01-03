@@ -8,7 +8,7 @@ require 'image_size'
 # If the align parameter is defined and valid (right, left, center) it is applied to the picture
 def picture(identifier, params = {})
   # finds the Nanoc item matching the given path
-  image = @items.find { |item| item.identifier.to_s == identifier }
+  image = @items[identifier]
 
   if image.nil?
     raise "unable to find image: #{identifier}"

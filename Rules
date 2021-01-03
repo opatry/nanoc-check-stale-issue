@@ -21,44 +21,44 @@ preprocess do
 
     if content =~ /\s<!-- more -->\s/
       excerpt = content.partition('<!-- more -->').first
-      ignored_excerpt_pictures += item[:pictures] - excerpt.scan(/picture\('(.+)'\)/).flatten.uniq
+      ignored_excerpt_pictures += (item[:pictures] - excerpt.scan(/picture\('(.+)'\)/).flatten.uniq).map { |i| @items[i] }
     end
   end
 end
 
 [:excerpt, :default].each do |repr|
-  compile '/photos/*', :rep => repr do
-    unless repr == :excerpt && ignored_excerpt_pictures.include?(@item.identifier.to_s)
+  compile '/photos/**/*', :rep => repr do
+    unless repr == :excerpt && ignored_excerpt_pictures.include?(@item)
       width = @config[:picture_width][repr]
       # filter :thumbnailize, :width => width unless @config[:dev]
     end
   end
 
-  compile '/posts/*', :rep => repr do
+  compile '/posts/**/*', :rep => repr do
     # erb must be done before markdown to allow image helper processing markdown instead of direct HTML
     filter :erb
     filter :kramdown if @item[:extension] == 'md'
 
-    layout "article_#{repr}"
+    layout "/article_#{repr}.*"
 
-    layout 'article' unless @item[:kind].nil?
+    layout '/article.*' unless @item[:kind].nil?
 
     snapshot repr if repr == :excerpt
 
-    layout 'default' if repr == :default
+    layout '/default.*' if repr == :default
   end
 end
 
-compile '*' do
+compile '/**/*' do
   unless @item.binary?
     filter :erb
     filter :kramdown if @item[:extension] == 'md'
-    layout 'default'
+    layout '/default.*'
   end
 end
 
-route '/posts/*', :rep => :default do
-  slug = /[0-9]{4}\-[0-9]{2}\-[0-9]{2}\-([^\/]+)/.match(@item.identifier).captures.first
+route '/posts/**/*', :rep => :default do
+  slug = /[0-9]{4}\-[0-9]{2}\-[0-9]{2}\-([^\/]+)/.match(@item.identifier.without_exts).captures.first
 
   post_date = Date.parse(@item[:created_at].to_s)
   month_2d = '%02d' % post_date.month
@@ -66,25 +66,26 @@ route '/posts/*', :rep => :default do
   "/#{post_date.year}/#{month_2d}/#{day_2d}/#{slug}/index.html"
 end
 
-route '/posts/*', :rep => :excerpt do
+route '/posts/**/*', :rep => :excerpt do
   # ignore this representation as output, only used to retrieve its content
 end
 
 [:excerpt, :default].each do |repr|
-  route '/photos/*', :rep => repr do
-    unless repr == :excerpt && ignored_excerpt_pictures.include?(@item.identifier.to_s)
-      "#{@item.identifier.chop}-#{@item_rep.name}.#{@item[:extension]}"
+  route '/photos/**/*', :rep => repr do
+    unless repr == :excerpt && ignored_excerpt_pictures.include?(@item)
+      suffix = "-#{@item_rep.name}" unless repr == :default
+      "#{@item.identifier.without_exts}#{suffix}.#{@item[:extension]}"
     end
   end
 end
 
-route '*' do
+route '/**/*' do
   if @item.binary?
-    @item.identifier.chop
+    @item.identifier
   else
     # Write item with identifier /foo/ to /foo/index.html
-    @item.identifier + 'index.html'
+    @item.identifier.without_exts + '/index.html'
   end
 end
 
-layout '*', :erb
+layout '/**/*', :erb
