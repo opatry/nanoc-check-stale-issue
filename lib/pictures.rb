@@ -14,6 +14,11 @@ def picture(identifier, params = {})
     raise "unable to find image: #{identifier}"
   end
 
+  puts "image=#{image.raw_filename}"
+  image.reps.each do |rep|
+    puts "  - #{rep.name}"
+  end
+
   # TODO align using given params if any
 
   # choose the image representation matching the current item one
@@ -27,7 +32,9 @@ def picture(identifier, params = {})
   resized_width = params[:width] || @config[:picture_width][image_repr.name]
   resized_height = real_image.height * resized_width / real_image.width
 
-  image_path = image.path :rep => image_repr.name
+  # image_path = image.path rep: "#{image_repr.name}_original"
+  image_path = image.path rep: :default_original
+  puts "image_path = #{image_path}"
   image_path_html = image_path #escape_uri(image_path).gsub('%2F', '/')
   image_basename = File.basename(image.raw_filename, '.*')
   image_html_id = "picture_#{image_basename}"
@@ -35,12 +42,21 @@ def picture(identifier, params = {})
   # inline max-width/height CSS styles to allow combination width HTML width/height attributes
   image_tag = "<img src=\"#{image_path_html}\" loading=\"lazy\" id=\"#{image_html_id}\" width=\"#{resized_width}\" height=\"#{resized_height}\" alt=\"#{image_basename}\"/>"
 
-  if @item_rep.name == :excerpt
-    item_path_html = @item.path # escape_uri(@item.path).gsub('%2F', '/')
-    # do not link directly to image anchor, it makes the result a bit weird (to be considered with #175)
-    out = "<a href=\"#{item_path_html}\" title=\"voir la suite…\">#{image_tag}</a>"
-  else
-    out = image_tag
-  end
-  out = "#{out}\n{: .picture-wrapper}\n"
+  # webp_image_path = image.path rep: "#{image_repr.name}_webp"
+  webp_image_path = image.path rep: :default_webp
+  picture_tag = <<~PICTURE_TAG
+                  <picture>
+                    <source type="image/webp" srcset="#{webp_image_path}">
+                    #{image_tag}
+                  </picture>
+                PICTURE_TAG
+
+  out = if @item_rep.name == :excerpt
+          item_path_html = @item.path # escape_uri(@item.path).gsub('%2F', '/')
+          # do not link directly to image anchor, it makes the result a bit weird (to be considered with #175)
+          out = "<a href=\"#{item_path_html}\" title=\"voir la suite…\">#{picture_tag}</a>"
+        else
+          picture_tag
+        end
+  "<p markdown=\"0\" class=\"picture-wrapper\">#{out}</p>"
 end

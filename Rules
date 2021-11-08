@@ -26,15 +26,21 @@ preprocess do
   end
 end
 
-[:excerpt, :default].each do |repr|
-  compile '/photos/**/*', :rep => repr do
-    unless repr == :excerpt && !@config[:all_excerpt_pictures].include?(@item)
-      width = @config[:picture_width][repr]
-      # filter :thumbnailize, :width => width unless @config[:dev]
+compile '/photos/**/*', rep: :default do
+  nil
+end
+%i[excerpt default].each do |repr|
+  %i[webp original].each do |image_format|
+    compile '/photos/**/*', rep: "#{repr}_#{image_format}" do
+      unless repr == :excerpt && !@config[:all_excerpt_pictures].include?(@item)
+        width = @config[:picture_width][repr]
+        # filter :thumbnailize, :width => width unless @config[:dev]
+      end
+      filter :webp if image_format == :webp
     end
   end
 
-  compile '/posts/**/*', :rep => repr do
+  compile '/posts/**/*', rep: repr do
     # erb must be done before markdown to allow image helper processing markdown instead of direct HTML
     filter :erb
     filter :kramdown if @item[:extension] == 'md'
@@ -57,7 +63,7 @@ compile '/**/*' do
   end
 end
 
-route '/posts/**/*', :rep => :default do
+route '/posts/**/*', rep: :default do
   slug = /[0-9]{4}\-[0-9]{2}\-[0-9]{2}\-([^\/]+)/.match(@item.identifier.without_exts).captures.first
 
   post_date = Date.parse(@item[:created_at].to_s)
@@ -70,11 +76,17 @@ route '/posts/**/*', :rep => :excerpt do
   # ignore this representation as output, only used to retrieve its content
 end
 
-[:excerpt, :default].each do |repr|
-  route '/photos/**/*', :rep => repr do
-    unless repr == :excerpt && !@config[:all_excerpt_pictures].include?(@item)
-      suffix = "-#{@item_rep.name}" unless repr == :default
-      "#{@item.identifier.without_exts}#{suffix}.#{@item[:extension]}"
+route '/photos/**/*', rep: :default do
+  nil
+end
+%i[excerpt default].each do |repr|
+  %i[webp original].each do |image_format|
+    route '/photos/**/*', rep: "#{repr}_#{image_format}" do
+      ext = image_format == :original ? @item[:extension] : image_format
+      # unless repr == :excerpt && !@config[:all_excerpt_pictures].include?(@item)
+        suffix = "-#{@item_rep.name}" unless repr == :default
+        "#{@item.identifier.without_exts}#{suffix}.#{ext}"
+      # end
     end
   end
 end
