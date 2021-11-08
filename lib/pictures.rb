@@ -32,8 +32,7 @@ def picture(identifier, params = {})
   resized_width = params[:width] || @config[:picture_width][image_repr.name]
   resized_height = real_image.height * resized_width / real_image.width
 
-  # image_path = image.path rep: "#{image_repr.name}_original"
-  image_path = image.path rep: :default_original
+  image_path = image.path rep: "#{image_repr.name}_original".to_sym
   puts "image_path = #{image_path}"
   image_path_html = image_path #escape_uri(image_path).gsub('%2F', '/')
   image_basename = File.basename(image.raw_filename, '.*')
@@ -42,8 +41,7 @@ def picture(identifier, params = {})
   # inline max-width/height CSS styles to allow combination width HTML width/height attributes
   image_tag = "<img src=\"#{image_path_html}\" loading=\"lazy\" id=\"#{image_html_id}\" width=\"#{resized_width}\" height=\"#{resized_height}\" alt=\"#{image_basename}\"/>"
 
-  # webp_image_path = image.path rep: "#{image_repr.name}_webp"
-  webp_image_path = image.path rep: :default_webp
+  webp_image_path = image.path rep: "#{image_repr.name}_webp".to_sym
   picture_tag = <<~PICTURE_TAG
                   <picture>
                     <source type="image/webp" srcset="#{webp_image_path}">
